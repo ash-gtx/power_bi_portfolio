@@ -1,0 +1,98 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Google Play Store: what makes an app perform?</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f8;--card:#fff;--ink:#14213d;--mut:#5b6b7f;--line:#dbe3ea;--acc:#0b8f87;--hi:#c77f00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1621;--card:#16222f;--ink:#e8eef4;--mut:#93a4b6;--line:#26364a;--acc:#3cc7bd;--hi:#f0b429}}
+:root[data-theme="dark"]{--bg:#0e1621;--card:#16222f;--ink:#e8eef4;--mut:#93a4b6;--line:#26364a;--acc:#3cc7bd;--hi:#f0b429}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Manrope,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:clamp(24px,4vw,36px);line-height:1.15;margin:0 0 6px;font-weight:800}
+h2{font-size:18px;margin:32px 0 4px;font-weight:800}
+.sub{color:var(--mut);margin:0 0 4px;max-width:70ch}.q{border-left:3px solid var(--hi);padding-left:12px;margin:14px 0 0;max-width:75ch}
+.grid{display:grid;gap:12px}.k{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kv{font-size:26px;font-weight:800;line-height:1.1}.kl{color:var(--mut);font-size:13px;margin-top:4px}
+.c2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.c4{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card h3{font-size:14px;margin:0 0 2px}.card p{margin:0 0 8px;color:var(--mut);font-size:12.5px}
+.ch{position:relative;height:220px}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mut);font-weight:600}td.n,th.n{text-align:right}
+.hm td{text-align:center;color:#0d1b2a}.hm td:first-child{text-align:left;color:var(--ink)}
+.two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}.two b{font-size:20px}
+.ins p{margin:0 0 10px;max-width:80ch}.ins b{font-weight:800}
+ul{margin:6px 0 0;padding-left:18px}li{margin-bottom:5px;max-width:85ch}
+</style></head><body><main>
+<h1>Google Play Store: what makes an app perform?</h1>
+<p class="sub">Interactive rebuild of the Python case study, corrected and extended. Data: <span id="cl"></span> apps, scraped 8 Aug 2018.</p>
+<p class="q">Business question: which app features (size, price, popularity) signal a well-performing app, so Google can boost visibility for the most promising ones?</p>
+<div class="grid k" id="kpi"></div>
+
+<h2>Do popularity, size or price predict rating?</h2>
+<p class="sub">All four charts share one rating scale (3.8 to 4.5) so the flat lines are directly comparable.</p>
+<div class="grid c4" style="margin-top:12px">
+<div class="card"><h3>By installs tier</h3><p>Avg rating</p><div class="ch"><canvas id="c1"></canvas></div></div>
+<div class="card"><h3>By app size</h3><p>Avg rating, size quintiles (real sizes only)</p><div class="ch"><canvas id="c2"></canvas></div></div>
+<div class="card"><h3>By price</h3><p>Avg rating</p><div class="ch"><canvas id="c3"></canvas></div></div>
+<div class="card"><h3>By year of last update</h3><p>Avg rating</p><div class="ch"><canvas id="c4"></canvas></div></div></div>
+
+<h2>Distribution and audience</h2>
+<div class="grid c2" style="margin-top:12px">
+<div class="card"><h3>Rating distribution</h3><p>Number of apps per rating band (band start shown)</p><div class="ch"><canvas id="h"></canvas></div></div>
+<div class="card"><h3>Content rating mix</h3><p>Share of apps</p><div class="ch"><canvas id="d"></canvas></div></div></div>
+
+<h2>Free vs paid</h2>
+<div class="grid c2" style="margin-top:12px" id="tp"></div>
+
+<h2>Rating risk by content rating and app size</h2>
+<p class="sub">20th percentile rating: the rating that 1 in 5 apps falls below. Darker means safer.</p>
+<div class="card sc" style="margin-top:12px"><table class="hm" id="hm"></table></div>
+
+<h2>Largest categories</h2>
+<div class="card sc" style="margin-top:12px"><table id="ct"></table></div>
+
+<h2>Top-rated apps with proven audiences</h2>
+<p class="sub">Minimum 10,000 reviews, so a rating reflects real usage.</p>
+<div class="card sc" style="margin-top:12px"><table id="tt"></table></div>
+
+<h2>Findings</h2>
+<div class="card ins" style="margin-top:12px" id="ins"></div>
+<h2>What was corrected from the notebook</h2>
+<div class="card"><ul id="nt"></ul></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+const D={"K":{"apps":7783,"installs":18979383010,"avg":4.16,"med":4.3,"good":75.7,"free":92.5,"avgprice":4.17,"medinst":100000,"rev1k":22.3,"fresh":61.6,"top5":46.9,"cats":33},"clean":{"raw":8576,"dedup":7790,"final":7783,"sizeimp":978},"hist":[[1.0,17],[1.25,3],[1.5,15],[1.75,19],[2.0,34],[2.25,39],[2.5,67],[2.75,84],[3.0,213],[3.25,226],[3.5,539],[3.75,634],[4.0,1887],[4.25,1629],[4.5,1814],[4.75,563]],"cr":{"Everyone":6338,"Teen":827,"Mature 17+":337,"Everyone 10+":281},"tier":[["<1K","1K-10K","10K-100K","100K-1M","1M-10M","10M+"],[4.34,4.05,4.04,4.13,4.22,4.28],[630,1112,1435,1595,2022,989]],"price":[["Free","<$2","$2-5","$5+"],[4.15,4.29,4.26,4.23],[7203,205,281,94]],"size":[["0-4MB","4-8MB","8-18MB","18-35MB","35-98MB"],[4.1,4.16,4.16,4.15,4.2],[1401,1330,1370,1374,1330]],"hm":{"cols":["0-4MB","4-8MB","8-18MB","18-35MB","35-98MB"],"rows":{"Everyone":[3.7,3.8,3.8,3.8,3.9],"Everyone 10+":[3.86,3.8,4.1,4.0,4.0],"Mature 17+":[3.32,3.6,3.6,3.8,4.0],"Teen":[3.82,4.0,3.8,3.9,4.0]}},"yr":[[2014,2015,2016,2017,2018],[4.03,4.06,4.04,4.08,4.21],[182,376,623,1395,5080]],"cat":[["Family",1606,3017.0,4.16,9.3],["Game",781,3187.8,4.22,9.5],["Tools",681,1930.7,4.08,9.3],["Finance",293,335.2,4.16,2.4],["Lifestyle",291,383.6,4.04,3.8],["Personalization",287,582.4,4.3,22.6],["Medical",286,38.3,4.24,20.6],["Productivity",274,963.1,4.23,6.6],["Business",259,437.0,4.15,3.5],["Sports",250,665.4,4.25,8.8],["Health And Fitness",241,494.0,4.3,4.6],["Photography",235,1408.1,4.16,6.4]],"type":{"Free":[7203,4.15,100000,2907],"Paid":[580,4.27,5000,213]},"top":[["JW Library","Books And Reference",4.9,922752],["Six Pack in 30 Days - Abs Workout","Health And Fitness",4.9,272337],["Tickets + PDA 2018 Exam","Auto And Vehicles",4.9,197136],["Learn Japanese, Korean, Chinese Of","Education",4.9,133136],["StrongLifts 5x5 Workout Gym Log & ","Health And Fitness",4.9,66791],["PixPanda - Color by Number Pixel A","Family",4.9,55723],["ipsy: Makeup, Beauty, and Tips","Beauty",4.9,49790],["Hungry Hearts Diner: A Tale of Sta","Family",4.9,46253]],"corr":{"inst":-0.01,"rev":0.09,"size":0.04,"price":0.08},"fivestar":[265,248]},K=D.K,$=s=>document.querySelector(s),cs=getComputedStyle(document.documentElement),c=v=>cs.getPropertyValue(v).trim();
+const f=n=>n>=1e9?(n/1e9).toFixed(1)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n,L=n=>n.toLocaleString('en-IN');
+$('#cl').textContent=L(D.clean.final);
+$('#kpi').innerHTML=[[L(K.apps),'Apps analysed'],[f(K.installs)+'+','Total installs (minimum)'],[K.avg,'Average rating'],[K.good+'%','Apps rated 4.0 or higher'],[K.free+'%','Free apps'],['$'+K.avgprice,'Avg price of paid apps'],[f(K.medinst),'Median installs per app'],[K.rev1k,'Reviews per 1,000 installs'],[K.fresh+'%','Updated within 180 days'],[K.top5+'%','Apps in top 5 categories']].map(a=>`<div class="card"><div class="kv">${a[0]}</div><div class="kl">${a[1]}</div></div>`).join('');
+Chart.defaults.color=c('--mut');Chart.defaults.font.family='Manrope,system-ui,sans-serif';Chart.defaults.borderColor=c('--line');
+const base=x=>({maintainAspectRatio:false,plugins:{legend:{display:false}},...x});
+function ln(id,d){new Chart($(id),{type:'line',data:{labels:d[0],datasets:[{data:d[1],borderColor:c('--acc'),backgroundColor:c('--acc'),tension:.25,pointRadius:4}]},options:base({plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:i=>L(d[2][i.dataIndex])+' apps'}}},scales:{y:{min:3.8,max:4.5}}})})}
+ln('#c1',D.tier);ln('#c2',D.size);ln('#c3',D.price);ln('#c4',D.yr);
+new Chart($('#h'),{type:'bar',data:{labels:D.hist.map(x=>x[0].toFixed(2)),datasets:[{data:D.hist.map(x=>x[1]),backgroundColor:c('--acc')}]},options:base({scales:{x:{grid:{display:false}}}})});
+new Chart($('#d'),{type:'doughnut',data:{labels:Object.keys(D.cr),datasets:[{data:Object.values(D.cr),backgroundColor:[c('--acc'),c('--hi'),'#5b7fa6','#9aa9ba'],borderWidth:0}]},options:base({plugins:{legend:{display:true,position:'right'}}})});
+$('#tp').innerHTML=['Free','Paid'].map(t=>{const v=D.type[t];return `<div class="card"><h3>${t} apps</h3><div class="two"><div><b>${L(v[0])}</b><br><span class="kl">apps</span></div><div><b>${v[1]}</b><br><span class="kl">avg rating</span></div><div><b>${f(v[2])}</b><br><span class="kl">median installs</span></div><div><b>${L(v[3])}</b><br><span class="kl">median reviews</span></div></div></div>`}).join('');
+const col=v=>v==null?'transparent':`color-mix(in srgb,${c('--acc')} ${Math.max(8,Math.min(85,(v-3.2)/1*85))}%,${c('--card')})`;
+$('#hm').innerHTML='<tr><th>Content rating</th>'+D.hm.cols.map(x=>`<th style="text-align:center">${x}</th>`).join('')+'</tr>'+Object.entries(D.hm.rows).map(([k,v])=>`<tr><td>${k}</td>${v.map(x=>`<td style="background:${col(x)}">${x??'-'}</td>`).join('')}</tr>`).join('');
+$('#ct').innerHTML='<tr><th>Category</th><th class="n">Apps</th><th class="n">Installs (min)</th><th class="n">Avg rating*</th><th class="n">Paid apps</th></tr>'+D.cat.map(r=>`<tr><td>${r[0]}</td><td class="n">${L(r[1])}</td><td class="n">${L(r[2])}M</td><td class="n">${r[3]}</td><td class="n">${r[4]}%</td></tr>`).join('')+'<tr><td colspan="5" style="color:var(--mut);white-space:normal">*Average rating of apps with at least 100 reviews.</td></tr>';
+$('#tt').innerHTML='<tr><th>App</th><th>Category</th><th class="n">Rating</th><th class="n">Reviews</th></tr>'+D.top.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="n">${r[2]}</td><td class="n">${L(r[3])}</td></tr>`).join('');
+const R=D.corr,T=D.tier[1],P=D.type;
+$('#ins').innerHTML=[
+`<b>Nothing simple predicts rating.</b> Rank correlation with rating is ${R.inst} for installs, ${R.rev} for reviews, ${R.size} for size and ${R.price} for price, all close to zero. Average rating stays within a narrow band across installs tiers, size buckets and price bands.`,
+`<b>Paid apps rate slightly higher but reach far fewer people.</b> ${P.Paid[1]} vs ${P.Free[1]} average rating, yet median installs are ${f(P.Paid[2])} vs ${f(P.Free[2])}. Paid apps are ${(100-K.free).toFixed(1)}% of the catalogue.`,
+`<b>Perfect 5.0 scores are mostly noise.</b> ${D.fivestar[1]} of ${D.fivestar[0]} five-star apps have fewer than 30 reviews. Any "top rated" feature needs a minimum review count.`,
+`<b>Recommendation:</b> do not boost on rating or installs alone. A visibility score should combine rating with a review-count floor, engagement (reviews per 1,000 installs), update freshness and category-relative performance.`,
+`<b>Risk pocket:</b> Mature 17+ apps in the smallest size band have the weakest 20th-percentile rating (${D.hm.rows['Mature 17+'][0]}).`].map(x=>`<p>${x}</p>`).join('');
+const C=D.clean;
+$('#nt').innerHTML=[
+`Removed ${L(C.raw-C.dedup)} duplicate app rows (400 were exact copies), keeping the record with the most reviews. Counts in the notebook were inflated.`,
+`Removed ${C.dedup-C.final} rows where reviews exceeded installs. The notebook flagged this check but never acted on it.`,
+`${L(C.sizeimp)} apps share one identical size (about 21 MB), which is a mean-imputed placeholder for "Varies with device". They are excluded from size analysis, and size is shown in MB, not KB.`,
+`Replaced "Updated Month" with update year. Month ignores year, and about ${Math.round(D.yr[2][4]/C.final*100)}% of apps were updated in 2018 just before the scrape, so monthly patterns reflect the snapshot date, not seasonality. The notebook's holiday-season conclusion is not supported.`,
+`Heatmap uses the 20th percentile rating, not the minimum, which one bad app can distort. Category ratings use apps with at least 100 reviews.`,
+`Installs are bucket floors (10,000+ means at least 10,000), so totals are minimums.`,
+`Limitation: the notebook removed apps with 100M+ installs, over 1M reviews or prices above $30. Findings describe small and mid-sized apps, not the Play Store's biggest apps.`].map(x=>`<li>${x}</li>`).join('');
+</script></body></html>
